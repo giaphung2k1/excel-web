@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --header-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-right: 20px;
+        }
+
+        .search-container {
+            position: relative;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .module-tabs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 16px;
+        }
+
+        .module-btn {
+            border: 1px solid var(--border);
+            background: #fff;
+            color: #475569;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .module-btn:hover,
+        .module-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .table-wrapper {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: auto;
+            max-height: calc(100vh - 180px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f1f5f9;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th.money-column,
+        td.money-column {
+            text-align: right;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Data module — Excel-like grid */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+
+            html,
+            body {
+                background: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            #loginOverlay,
+            #editModal,
+            #allHistoryModal,
+            #loading,
+            .header-container,
+            #summaryContainer,
+            #pagination {
+                display: none !important;
+            }
+
+            #mainContent {
+                display: block !important;
+            }
+
+            #tableWrapper {
+                max-height: none !important;
+                overflow: visible !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: #fff !important;
+                width: 100% !important;
+            }
+
+            #dataTable {
+                width: 100% !important;
+                table-layout: fixed !important;
+            }
+
+            #dataTable.excel-grid {
+                font-size: 8pt !important;
+                line-height: 1.1 !important;
+            }
+
+            #dataTable.excel-grid th,
+            #dataTable.excel-grid td {
+                padding: 1px 3px !important;
+                height: auto !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+            }
+
+            #dataTable .excel-stt-col,
+            #dataTable .excel-stt-cell,
+            #dataTable .excel-edit-col,
+            #dataTable .excel-edit-cell {
+                display: none !important;
+            }
+
+            #dataTable.excel-grid thead th {
+                position: static !important;
+            }
+
+            #dataTable,
+            #dataTable * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        .table-wrapper.excel-mode {
+            border-radius: 0;
+            border-color: #000;
+            box-shadow: none;
+        }
+
+        #dataTable.excel-grid {
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            font-size: 0.9rem;
+            border-collapse: collapse;
+        }
+
+        #dataTable.excel-grid th,
+        #dataTable.excel-grid td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            vertical-align: middle;
+        }
+
+        #dataTable.excel-grid thead th {
+            background: #000;
+            color: #fff;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid #000;
+        }
+
+        #dataTable.excel-grid thead th.excel-stt-col,
+        #dataTable.excel-grid tbody td.excel-stt-cell {
+            text-align: center;
+            width: 44px;
+            min-width: 44px;
+            max-width: 44px;
+            padding: 5px 4px;
+            font-weight: 600;
+            color: #333;
+            background: #f0f0f0 !important;
+            user-select: none;
+        }
+
+        #dataTable.excel-grid thead th.excel-stt-col {
+            background: #1a1a1a !important;
+            color: #fff;
+        }
+
+        #dataTable.excel-grid thead th.excel-edit-col {
+            background: #1a1a1a;
+            text-align: center;
+            width: 48px;
+            min-width: 48px;
+        }
+
+        #dataTable.excel-grid thead th.cell-label-header,
+        #dataTable.excel-grid tbody td.cell-label {
+            text-align: left;
+        }
+
+        #dataTable.excel-grid th.money-column,
+        #dataTable.excel-grid td.money-column {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        #dataTable.excel-grid tbody td.cell-payment-note {
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        #dataTable.excel-grid tbody tr:nth-child(odd) td {
+            background: #dae8fc;
+        }
+
+        #dataTable.excel-grid tbody tr:nth-child(even) td {
+            background: #fff;
+        }
+
+        #dataTable.excel-grid tbody tr:hover td {
+            background: #c5d9f7;
+        }
+
+        #dataTable.excel-grid tbody tr.row-highlight-last td {
+            background: #fff9c4 !important;
+            font-weight: 700;
+        }
+
+        #dataTable.excel-grid tbody tr.row-highlight-last td.excel-stt-cell {
+            background: #f5e6a3 !important;
+        }
+
+        #dataTable.excel-grid tbody tr.row-highlight-last:hover td {
+            background: #ffef9e !important;
+        }
+
+        #dataTable.excel-grid tbody td.excel-edit-cell {
+            text-align: center;
+            padding: 2px;
+        }
+
+        #dataTable.excel-grid .excel-edit-btn {
+            border: none;
+            background: transparent;
+            padding: 4px;
+            border-radius: 0;
+            cursor: pointer;
+            line-height: 0;
+        }
+
+        #dataTable.excel-grid .excel-edit-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        #dataTable.excel-grid td.editable-cell {
+            cursor: cell;
+        }
+
+        #dataTable.excel-grid td.cell-calculated {
+            cursor: default;
+            background: #f1f5f9 !important;
+        }
+
+        #dataTable.excel-grid tbody tr:nth-child(odd) td.cell-calculated {
+            background: #e8f0fe !important;
+        }
+
+        #dataTable.excel-grid tbody tr.row-highlight-last td.cell-calculated {
+            background: #fff3b0 !important;
+        }
+
+        #dataTable.excel-grid td.cell-editing {
+            padding: 0;
+            background: #fff !important;
+        }
+
+        #dataTable.excel-grid .inline-cell-input {
+            width: 100%;
+            min-width: 60px;
+            height: 100%;
+            min-height: 26px;
+            border: none;
+            outline: 2px solid #0563c1;
+            outline-offset: -2px;
+            padding: 5px 8px;
+            font: inherit;
+            background: #fff;
+            box-sizing: border-box;
+        }
+
+        #dataTable.excel-grid .inline-cell-input.money-column {
+            text-align: right;
+        }
+
+        #dataTable.excel-grid td.cell-saving {
+            opacity: 0.6;
+        }
+
+        .loading-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Login Styles */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .login-card h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        #mainContent {
+            display: none;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 98%;
+            max-width: 1600px;
+            max-height: 95vh;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .edit-form-group {
+            margin-bottom: 1rem;
+        }
+
+        .edit-form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        /* History Modal Styles */
+        .history-section {
+            display: none;
+            padding: 1rem;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+
+        .history-item {
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            table-layout: auto;
+        }
+
+        .history-table th {
+            background: #f1f5f9;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .history-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .diff-changed {
+            color: #e11d48;
+            font-weight: 800;
+            background: #fff1f2;
+        }
+
+        /* Summary Bar */
+        .summary-container {
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .summary-table th {
+            text-align: left;
+            color: #64748b;
+            font-weight: 700;
+            padding: 5px 15px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .summary-table td {
+            padding: 5px 15px;
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .summary-table tr:first-child th,
+        .summary-table tr:first-child td {
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .summary-table tr:last-child th,
+        .summary-table tr:last-child td {
+            padding-top: 10px;
+        }
+
+        .summary-table .highlight {
+            color: #10b981;
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .btn-restore {
+            background: #eff6ff;
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+
+        .btn-restore:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-view-history {
+            background: none;
+            border: 1.5px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-view-history:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-cancel {
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-logout {
+            padding: 10px 18px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-logout:hover {
+            background: #b91c1c;
+            color: #fff;
+            border-color: #b91c1c;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+        }
+
+        .pagination-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f8fafc;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <h2>USER LOGIN</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" class="form-input" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" class="form-input" placeholder="Enter password">
+            </div>
+            <button class="login-btn" onclick="handleLogin()">LOGIN</button>
+            <p id="loginError"
+                style="color: #e11d48; font-size: 0.85rem; margin-top: 15px; text-align: center; display: none; font-weight: 600;">
+            </p>
+        </div>
+    </div>
+
+        <div id="mainContent">
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="editModalTitle" style="font-weight: 800; color: var(--primary); font-size: 1.25rem;">EDIT DATA</h3>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <button class="btn-view-history" id="viewHistoryBtn" onclick="toggleHistory()">View history</button>
+                        <button onclick="closeEditModal()"
+                            style="border:none; background:none; cursor:pointer; color:#94a3b8;">
+                            <i data-lucide="x" style="width: 28px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-body" id="editForm">
+                    <!-- Inputs injected here -->
+                </div>
+                <div id="rowHistory" class="history-section">
+                    <!-- History items injected here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button class="btn-save" id="saveEditBtn" onclick="saveEdit()">Save changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- All History Modal -->
+        <div id="allHistoryModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 style="font-weight: 800; color: var(--primary); font-size: 1.25rem;">ALL HISTORY</h3>
+                    <button onclick="closeAllHistoryModal()"
+                        style="border:none; background:none; cursor:pointer; color:#94a3b8;">
+                        <i data-lucide="x" style="width: 28px;"></i>
+                    </button>
+                </div>
+                <div class="history-section" id="allHistoryContent" style="display:block; max-height:75vh;">
+                    <!-- All history injected here -->
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading-mask">
+            <div class="spinner"></div>
+            <p style="font-weight: 700; color: var(--primary);">Processing data...</p>
+        </div>
+
+        <div class="header-container">
+            <div style="display:flex; align-items:center;">
+                <h1 id="pageTitle">EXCEL WEB APP</h1>
+                <div class="module-tabs">
+                    <button id="dataModuleBtn" class="module-btn active" onclick="switchModule('data')">
+                        <i data-lucide="table-2" style="width:16px;"></i> Data
+                    </button>
+                    <button id="userModuleBtn" class="module-btn" onclick="switchModule('users')">
+                        <i data-lucide="users" style="width:16px;"></i> Users
+                    </button>
+                </div>
+                <div class="search-container">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="SEARCH..."
+                        oninput="filterTable()">
+                </div>
+                <button id="addUserBtn" class="module-btn" onclick="openAddUserModal()" style="display:none;">
+                    <i data-lucide="plus" style="width:16px;"></i> Add
+                </button>
+                <button id="allHistoryBtn" class="module-btn" onclick="openAllHistoryModal()" style="display:none;">
+                    <i data-lucide="history" style="width:16px;"></i> History
+                </button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:20px;">
+                <div style="text-align: right;">
+                    <div id="userNameDisplay" style="font-weight:800; font-size:1rem; color:var(--text);"></div>
+                    <div id="userRoleDisplay"
+                        style="font-size:0.8rem; color:#64748b; text-transform: uppercase; font-weight:600;"></div>
+                </div>
+                <button onclick="handleLogout()" class="btn-logout">
+                    <i data-lucide="log-out" style="width:18px;"></i> LOG OUT
+                </button>
+            </div>
+        </div>
+
+        <div class="summary-container" id="summaryContainer">
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th style="width: 200px;">Summary</th>
+                        <th>Treys Payments</th>
+                        <th>Bills Payments</th>
+                        <th>Total Costs</th>
+                        <th>Estimated</th>
+                        <th>Payments</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTableBody">
+                    <tr>
+                        <th>Total:</th>
+                        <td id="tot-trey">$0.00</td>
+                        <td id="tot-bill">$0.00</td>
+                        <td id="tot-cost">$0.00</td>
+                        <td id="tot-est">$0.00</td>
+                        <td id="tot-payments">$0.00</td>
+                    </tr>
+                    <tr>
+                        <th class="highlight">Total Build Cost:</th>
+                        <td id="tbc-trey" class="highlight">$0.00</td>
+                        <td id="tbc-bill" class="highlight">$0.00</td>
+                        <td id="tbc-cost" class="highlight">$0.00</td>
+                        <td id="tbc-est" class="highlight">$0.00</td>
+                        <td id="tbc-payments" class="highlight">$0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-wrapper" id="tableWrapper">
+            <table id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="pagination" class="pagination"></div>
+
+        <script>
+            const CONFIG = {
+                spreadsheetId: "1Ykj3lrKr3wELlUKLzI1IJOJZG1zbpt53Amlao27nTyo",
+                serviceAccountEmail: "test-gia-ason@api-test-sheet-161.iam.gserviceaccount.com",
+                privateKey: `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC3NN84hLTkQPZd
+Lj7niXZTICq7nHsuTn3J6r2Paq12m70/lYSmrwh1i0EStr9bO19QM8cevGlslwGr
+WSVOLJlc6+w1HGPKvRXtA41kYV9MYIvpzIPQtkFE7Hxq71QyBARcv39Lfzze6Ioj
+3G8VBvAKFLAnCUr97GHRv+KbCTFxPZupd3PEB+xS5ZUlzdBCEZvDid3iXaaEJJ+l
+Td1apAGQHjtnDTLOkiTa8zf7X5ebALwnI9MziOdN8VyprHXGhkachPbKyrG0QwEs
+2jtiI6Y5ULsBPjNefoavH8MKU5DEAT9h0fZ7KfsKYVMDuXqmEKBs0D3B4Z6aDZQW
+wT2dDRZDAgMBAAECggEAEIuVoSzZVuFhaz1GI9ji0IacjvO50cIq7M8Zrj4/F756
+Ew6PIhKENafAb7U4INm2AnzUMO8CqL9Jpxs85qUM3W4JysSByqLUiRW2184amIyb
+j7jCXfLBTQn8AbHgrUepl5d/vBmFYMgon/mqjbNiGDb4FZgEQSkie5o6fi/dWp5d
+NahbZl+WTOB/znhAfKh/zferHNxldR/ERmwOubZUerkqysWiBigc3ovpLSUof9ur
+z3hNPPp0CKQjF40xuQc6FYTHUHMLuMvp78PXuc/mYqQmZ8VOGhU+faGtZ4m+QJly
+dF5dS8U5cwKEF+ptuAUiWSahn6INb9yKn3+FcsW0UQKBgQDb8N4eWFvbgpRo/vxo
+wBN2u2TWubj6clcrq/1a+VR0njC28Can0ogJHhrFhPxVs5D/rugs3HlbyAXJFptY
+V0DZPCwBxGU5P5RbGjXWWEUXjp4ISKQD8WKfVlXNr79TqLdOg2NZBYQAi06Cpo/T
+PV9l7LSG2Tj/9WdvD7W2wvrpaQKBgQDVPjpJN6xh7+sHtSU0mjKvrqigpHbuSQ/o
+XpUaWSIpJffm5QpFPAOcTT5mHZCyllicJQIrfPSY+sH8n+sF03CUqVkV4Q2UqfOf
+pFaLDB4P6SQ8iesZyF4VKFrj/cAvRJmp0e5W/DRnFkoEp+8c+nrru2+Dzm9kb7Uq
+0CiltqYAywKBgBtcfrV1to+7Ue0x84KwintV2rifyDRX7yI+tjkQFYKgf1zyyUxN
+c6D2vsvdvGqI+TvlrXqPPwW8/4NBrbeyux2LT8o0fYc+sp0WyKXOu2Gv21caelUH
+PYam/eultn6Y2Z0J2V0kw4Qx0GWOhQv5cZnDdb3k3iNxixmU8b03ynEpAoGBAKEA
+7O0fNe50QRZ+tOq0ihSPYQ55XrqnO3WNBDLynZJH8pbI1CpWF7vJrpVXOUs9rQWo
+A61mGR/wJMtiywaJEHWOL48PbzuR3jno0NcHfSMyOoPi9jlvSWncIFQH4TVPLF5F
+/Rh8L+ytrZE6YpWUoX6e9KGmGgDRPw5mQGpuL4RlAoGADe9n080SXlsUk4nHVjUz
+Efv7EBoBkgOpqb9T1foRfJl46NxmmTOYV3iGIhjwcDskEg284k4iq/gH6EEFyEBc
+Vz13jzB1nBgjfezFesVQz7bA/+Wik6HZtxAxVg38BKMt+Q1tYw9wOjbGPqOn++VC
+sR2Sh8e3h3Knd6j1tceRIFU=
+-----END PRIVATE KEY-----`,
+                tokenUrl: "https://oauth2.googleapis.com/token",
+                tabs: {
+                    'data': { range: 'data!A1:ZZ' },
+                    'users': { range: 'users!A1:D' },
+                    'history': { range: 'history!A1:G' }
+                }
+            };
+
+            let currentTab = 'data', allHeaders = [], allData = [], accessToken = null, tokenExpiry = 0;
+            let currentPage = 1, rowsPerPage = 100, filteredData = [];
+            let editingRowIndex = -1;
+            let inlineEditState = null;
+            let cachedDataSheetId = null;
+            const moduleTitles = {
+                data: 'EXCEL WEB APP',
+                users: 'USER MODULE'
+            };
+
+            async function getAccessToken() {
+                if (accessToken && Date.now() < tokenExpiry - 300000) return accessToken;
+                const header = { alg: "RS256", typ: "JWT" }, now = Math.floor(Date.now() / 1000),
+                    payload = { iss: CONFIG.serviceAccountEmail, scope: "https://www.googleapis.com/auth/spreadsheets", aud: CONFIG.tokenUrl, exp: now + 3600, iat: now };
+                const sJWT = KJUR.jws.JWS.sign("RS256", JSON.stringify(header), JSON.stringify(payload), CONFIG.privateKey);
+                const res = await fetch(CONFIG.tokenUrl, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${sJWT}` });
+                const data = await res.json();
+                accessToken = data.access_token; tokenExpiry = Date.now() + (data.expires_in * 1000);
+                return accessToken;
+            }
+
+            function normalizeItemName(value) {
+                return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            }
+
+            function countRowsBetweenItems(startIdx, endIdx) {
+                if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return 0;
+                return endIdx - startIdx - 1;
+            }
+
+            async function getDataSheetId() {
+                if (cachedDataSheetId !== null) return cachedDataSheetId;
+                const token = await getAccessToken();
+                const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}?fields=sheets.properties`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('sheet metadata failed');
+                const data = await res.json();
+                const sheet = (data.sheets || []).find(s => s.properties?.title === 'data');
+                if (!sheet) throw new Error('data sheet not found');
+                cachedDataSheetId = sheet.properties.sheetId;
+                return cachedDataSheetId;
+            }
+
+            async function insertSheetRowsAt(sheetRowOneBased, count) {
+                const token = await getAccessToken();
+                const sheetId = await getDataSheetId();
+                const startIndex = sheetRowOneBased - 1;
+                const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}:batchUpdate`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requests: [{
+                            insertDimension: {
+                                range: {
+                                    sheetId,
+                                    dimension: 'ROWS',
+                                    startIndex,
+                                    endIndex: startIndex + count
+                                },
+                                inheritFromBefore: false
+                            }
+                        }]
+                    })
+                });
+                if (!res.ok) throw new Error('insert rows failed');
+            }
+
+            async function ensureBlankRowsBetweenMiscAndTrey() {
+                const miscIdx = allData.findIndex(row => normalizeItemName(row[0]) === 'misc.');
+                const treyIdx = allData.findIndex(row => normalizeItemName(row[0]) === 'trey');
+                if (miscIdx === -1 || treyIdx === -1 || treyIdx <= miscIdx) return false;
+                const rowsBetween = countRowsBetweenItems(miscIdx, treyIdx);
+                const need = 2 - rowsBetween;
+                if (need <= 0) return false;
+                await insertSheetRowsAt(allData[treyIdx]._sheetRow, need);
+                return true;
+            }
+
+            async function loadSheetValues() {
+                const token = await getAccessToken();
+                const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/${CONFIG.tabs[currentTab].range}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const rawRows = data.values || [];
+
+                if (rawRows.length > 0) {
+                    allHeaders = rawRows[0];
+                    allData = rawRows.slice(1).map((row, i) => {
+                        const arr = Array.isArray(row) ? [...row] : [];
+                        arr._sheetRow = i + 2;
+                        return arr;
+                    });
+                } else {
+                    allHeaders = [];
+                    allData = [];
+                }
+            }
+
+            async function fetchData() {
+                document.getElementById('loading').style.display = 'flex';
+                try {
+                    await loadSheetValues();
+                    if (currentTab === 'data' && await ensureBlankRowsBetweenMiscAndTrey()) {
+                        await loadSheetValues();
+                    }
+                    currentPage = 1;
+                    filteredData = [...allData];
+                    if (currentTab === 'data') recalculateAllTotalCosts();
+                    renderModuleState();
+                    renderHeaders();
+                    renderTable();
+                    if (currentTab === 'data') updateSummary();
+                } catch (e) {
+                    alert("Error loading data. Please check your connection.");
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+
+            async function switchModule(tabName) {
+                if (!CONFIG.tabs[tabName] || currentTab === tabName) return;
+                if (tabName === 'users' && !isAdminUser()) {
+                    alert("You do not have permission to manage users.");
+                    return;
+                }
+                currentTab = tabName;
+                document.getElementById('searchInput').value = '';
+                await fetchData();
+            }
+
+            function renderModuleState() {
+                const isAdmin = isAdminUser();
+                const isDataTab = currentTab === 'data';
+                document.getElementById('pageTitle').innerText = moduleTitles[currentTab] || 'EXCEL WEB APP';
+                document.getElementById('summaryContainer').style.display = isDataTab ? 'block' : 'none';
+                document.getElementById('dataModuleBtn').classList.toggle('active', isDataTab);
+                document.getElementById('userModuleBtn').classList.toggle('active', currentTab === 'users');
+                document.getElementById('addUserBtn').style.display = isAdmin && currentTab === 'users' ? 'flex' : 'none';
+                document.getElementById('allHistoryBtn').style.display = isAdmin ? 'flex' : 'none';
+                document.getElementById('tableWrapper').classList.toggle('excel-mode', isDataTab);
+                document.getElementById('dataTable').classList.toggle('excel-grid', isDataTab);
+            }
+
+            const MONEY_HEADERS = new Set(["Treys Payments", "Bills Payments", "Total Costs", "Estimated", "Payments"]);
+
+            function getTotalCostsColumnIndices() {
+                return {
+                    trey: allHeaders.indexOf('Treys Payments'),
+                    bill: allHeaders.indexOf('Bills Payments'),
+                    cost: allHeaders.indexOf('Total Costs')
+                };
+            }
+
+            function calculateTotalCostsValue(row) {
+                const { trey, bill } = getTotalCostsColumnIndices();
+                if (trey === -1 || bill === -1) return '';
+                const treyVal = row[trey] ?? '';
+                const billVal = row[bill] ?? '';
+                const sum = parseCurrency(treyVal) + parseCurrency(billVal);
+                if (!sum && !String(treyVal).trim() && !String(billVal).trim()) return '';
+                return formatSummaryCurrency(sum);
+            }
+
+            function recalculateRowTotalCosts(row) {
+                const { cost } = getTotalCostsColumnIndices();
+                if (cost === -1) return;
+                row[cost] = calculateTotalCostsValue(row);
+            }
+
+            function recalculateAllTotalCosts() {
+                if (allHeaders.indexOf('Total Costs') === -1) return;
+                allData.forEach(recalculateRowTotalCosts);
+            }
+
+            function refreshRowTotalCostsCell(sheetRow) {
+                const { cost } = getTotalCostsColumnIndices();
+                if (cost === -1) return;
+                const row = allData.find(r => r._sheetRow === sheetRow);
+                const tr = document.querySelector(`#tableBody tr[data-sheet-row="${sheetRow}"]`);
+                const td = tr?.querySelector(`td[data-col-idx="${cost}"]`);
+                if (row && td) setCellHtml(td, 'Total Costs', cost, row[cost]);
+            }
+
+            function getPaymentDetailColIndex() {
+                const payIdx = allHeaders.indexOf('Payments');
+                if (payIdx <= 0) return -1;
+                const prev = String(allHeaders[payIdx - 1] || '').trim();
+                if (MONEY_HEADERS.has(prev)) return -1;
+                return payIdx - 1;
+            }
+
+            function getCellClass(header, idx) {
+                if (idx === 0) return 'cell-label';
+                if (MONEY_HEADERS.has(header)) return 'money-column';
+                if (idx === getPaymentDetailColIndex()) return 'cell-payment-note';
+                return '';
+            }
+
+            function isMoneyHeader(header) {
+                return MONEY_HEADERS.has(header);
+            }
+
+            function escapeHtml(text) {
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function getCellRawString(val) {
+                if (val === null || val === undefined) return '';
+                return String(val);
+            }
+
+            function escapeAttr(text) {
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;');
+            }
+
+            /** Display money columns with US currency formatting. */
+            function formatCellDisplay(header, val) {
+                const s = getCellRawString(val);
+                if (!s.trim()) return '';
+                if (String(val).startsWith('http')) return escapeHtml(s);
+                if (isMoneyHeader(header) && /[\d]/.test(s)) return escapeHtml(formatSummaryCurrency(parseCurrency(s)));
+                return escapeHtml(s);
+            }
+
+            function getCellEditValue(header, val) {
+                return getCellRawString(val);
+            }
+
+            function formatMoneyInputValue(header, val) {
+                const s = getCellRawString(val);
+                if (!isMoneyHeader(header) || !s.trim()) return s;
+                return /[\d]/.test(s) ? formatSummaryCurrency(parseCurrency(s)) : s;
+            }
+
+            function buildFullRowFromData(row) {
+                const arr = [];
+                allHeaders.forEach((_, i) => { arr[i] = row[i] ?? ''; });
+                return arr;
+            }
+
+            function setCellHtml(td, header, colIdx, val) {
+                const cls = getCellClass(header, colIdx);
+                const raw = getCellRawString(val);
+                const baseClass = header === 'Total Costs' ? 'cell-calculated' : 'editable-cell';
+                td.className = `${baseClass}${cls ? ' ' + cls : ''}`;
+                td.dataset.colIdx = colIdx;
+                td.setAttribute('data-raw-value', raw);
+                if (String(val).startsWith('http')) {
+                    td.innerHTML = `<a href="${escapeHtml(val)}" target="_blank" rel="noopener" style="color:#0563c1;font-weight:600;">Link</a>`;
+                } else {
+                    td.innerHTML = formatCellDisplay(header, val);
+                }
+            }
+
+            function cancelInlineEdit() {
+                if (!inlineEditState) return;
+                const { td, header, colIdx, row, originalValue } = inlineEditState;
+                inlineEditState = null;
+                row[colIdx] = originalValue;
+                td.classList.remove('cell-editing', 'cell-saving');
+                setCellHtml(td, header, colIdx, originalValue);
+            }
+
+            async function finishInlineEdit() {
+                if (!inlineEditState) return;
+                const { td, sheetRow, colIdx, header, originalValue, input, row } = inlineEditState;
+                inlineEditState = null;
+                const newValue = formatMoneyInputValue(header, input.value);
+                td.classList.remove('cell-editing');
+
+                if (newValue === originalValue) {
+                    setCellHtml(td, header, colIdx, newValue);
+                    return;
+                }
+
+                const oldRowSnapshot = buildFullRowFromData(row);
+                row[colIdx] = newValue;
+                const { trey, bill } = getTotalCostsColumnIndices();
+                if (colIdx === trey || colIdx === bill) recalculateRowTotalCosts(row);
+                const newRow = buildFullRowFromData(row);
+                td.classList.add('cell-saving');
+
+                try {
+                    await saveRowData(sheetRow, newRow, oldRowSnapshot, { silent: true });
+                    const filtered = filteredData.find(r => r._sheetRow === sheetRow);
+                    if (filtered) {
+                        filtered[colIdx] = newValue;
+                        if (colIdx === trey || colIdx === bill) recalculateRowTotalCosts(filtered);
+                    }
+                    updateSummary();
+                    setCellHtml(td, header, colIdx, newValue);
+                    if (colIdx === trey || colIdx === bill) refreshRowTotalCostsCell(sheetRow);
+                } catch (e) {
+                    row[colIdx] = originalValue;
+                    setCellHtml(td, header, colIdx, originalValue);
+                    alert("Error saving changes.");
+                } finally {
+                    td.classList.remove('cell-saving');
+                }
+            }
+
+            function startInlineEdit(td) {
+                const sheetRow = Number(td.dataset.sheetRow);
+                const colIdx = Number(td.dataset.colIdx);
+                const row = allData.find(r => r._sheetRow === sheetRow);
+                if (!row || Number.isNaN(colIdx)) return;
+                if (allHeaders[colIdx] === 'Total Costs') return;
+
+                const header = allHeaders[colIdx] || '';
+                const rawVal = td.getAttribute('data-raw-value') ?? getCellEditValue(header, row[colIdx]);
+                const cellCls = getCellClass(header, colIdx);
+
+                td.classList.add('cell-editing');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'inline-cell-input' + (cellCls === 'money-column' ? ' money-column' : '');
+                input.value = rawVal;
+                td.innerHTML = '';
+                td.appendChild(input);
+                input.focus();
+                input.select();
+
+                inlineEditState = { td, sheetRow, colIdx, header, originalValue: rawVal, input, row };
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); finishInlineEdit(); }
+                    if (e.key === 'Escape') { e.preventDefault(); cancelInlineEdit(); }
+                });
+                input.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        if (!inlineEditState || inlineEditState.input !== input) return;
+                        finishInlineEdit();
+                    }, 120);
+                });
+            }
+
+            function initInlineCellEdit() {
+                document.getElementById('dataTable').addEventListener('click', async (e) => {
+                    if (currentTab !== 'data') return;
+                    if (e.target.closest('.excel-stt-cell, .excel-edit-cell, .excel-edit-btn, a')) return;
+
+                    const td = e.target.closest('td.editable-cell');
+                    if (!td || td.classList.contains('cell-editing')) return;
+
+                    if (inlineEditState) {
+                        if (inlineEditState.td === td) return;
+                        await finishInlineEdit();
+                    }
+                    startInlineEdit(td);
+                });
+            }
+
+            async function saveRowData(sheetRow, newRow, oldRow, opts = {}) {
+                const { silent = false, actionType = 'UPDATE', tab = currentTab } = opts;
+                document.getElementById('loading').style.display = 'flex';
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/${tab}!A${sheetRow}?valueInputOption=USER_ENTERED`, {
+                        method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: [newRow] })
+                    });
+                    if (!res.ok) throw new Error('save failed');
+
+                    const user = JSON.parse(localStorage.getItem('userData') || '{}');
+                    const historyEntry = [new Date().toLocaleString('en-US'), user.id || 'N/A', actionType, tab, sheetRow, JSON.stringify(oldRow), JSON.stringify(newRow)];
+                    const histRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/history!A:A:append?valueInputOption=USER_ENTERED`, {
+                        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: [historyEntry] })
+                    });
+                    if (!histRes.ok) throw new Error('history failed');
+                    if (!silent) alert("Success!");
+                } catch (e) {
+                    throw e;
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+
+            function applyUserPermissions() {
+                const isAdmin = isAdminUser();
+                document.getElementById('userModuleBtn').style.display = isAdmin ? 'flex' : 'none';
+                if (!isAdmin && currentTab === 'users') currentTab = 'data';
+            }
+
+            function getCurrentUser() {
+                return JSON.parse(localStorage.getItem('userData') || '{}');
+            }
+
+            function isAdminUser() {
+                const u = getCurrentUser();
+                return String(u.role || '').trim().toLowerCase() === 'admin';
+            }
+
+            function renderHeaders() {
+                const head = document.getElementById('tableHead');
+                const isExcel = currentTab === 'data';
+
+                if (!isExcel) {
+                    head.innerHTML = `<tr><th style="width:50px;">Edit</th>${allHeaders.map(h => {
+                        if (shouldHideTableColumn(h)) return '';
+                        return `<th class="${MONEY_HEADERS.has(h) ? 'money-column' : ''}">${h}</th>`;
+                    }).join('')}</tr>`;
+                    return;
+                }
+
+                let html = '<tr><th class="excel-stt-col">STT</th>';
+
+                allHeaders.forEach((h, i) => {
+                    if (shouldHideTableColumn(h)) return;
+                    const cls = i === 0 ? 'cell-label-header' : (MONEY_HEADERS.has(h) ? 'money-column' : '');
+                    html += `<th class="${cls}">${escapeHtml(h || '')}</th>`;
+                });
+
+                head.innerHTML = html + '</tr>';
+            }
+
+            function renderTable() {
+                if (inlineEditState) cancelInlineEdit();
+                const tbody = document.getElementById('tableBody');
+                const start = (currentPage - 1) * rowsPerPage;
+                const pageData = filteredData.slice(start, start + rowsPerPage);
+                const isExcel = currentTab === 'data';
+                const lastFourSheetRows = isExcel
+                    ? new Set(filteredData.slice(-4).map(r => r._sheetRow))
+                    : new Set();
+
+                tbody.innerHTML = pageData.map((row, rowIndex) => {
+                    const stt = start + rowIndex + 1;
+                    const cells = allHeaders.map((header, idx) => {
+                        if (shouldHideTableColumn(header)) return '';
+                        const val = row[idx] ?? '';
+
+                        if (isExcel) {
+                            const cls = getCellClass(header, idx);
+                            const isCalculated = header === 'Total Costs';
+                            const classAttr = isCalculated
+                                ? `cell-calculated${cls ? ' ' + cls : ''}`
+                                : `editable-cell${cls ? ' ' + cls : ''}`;
+                            if (String(val).startsWith('http')) {
+                                return `<td class="${classAttr}" data-col-idx="${idx}"><a href="${escapeHtml(val)}" target="_blank" rel="noopener" style="color:#0563c1;font-weight:600;">Link</a></td>`;
+                            }
+                            const raw = getCellRawString(val);
+                            return `<td class="${classAttr}" data-col-idx="${idx}" data-raw-value="${escapeAttr(raw)}">${formatCellDisplay(header, val)}</td>`;
+                        }
+
+                        const className = MONEY_HEADERS.has(header) ? ' class="money-column"' : '';
+                        return `<td${className}>${val}</td>`;
+                    }).join('');
+
+                    const sttCell = isExcel ? `<td class="excel-stt-cell">${stt}</td>` : '';
+                    const editCell = isExcel
+                        ? ''
+                        : `<td><button onclick="openEditModal(${row._sheetRow})" style="border:none;background:#f1f5f9;padding:6px;border-radius:6px;cursor:pointer;"><i data-lucide="edit-3" style="width:16px;color:var(--primary);"></i></button></td>`;
+
+                    const rowAttr = isExcel ? ` data-sheet-row="${row._sheetRow}"` : '';
+                    const rowClass = lastFourSheetRows.has(row._sheetRow) ? ' class="row-highlight-last"' : '';
+                    return `<tr${rowClass}${rowAttr}>${sttCell}${editCell}${cells}</tr>`;
+                }).join('');
+
+                if (isExcel) {
+                    tbody.querySelectorAll('td.editable-cell').forEach(td => {
+                        td.dataset.sheetRow = td.closest('tr')?.dataset.sheetRow || '';
+                    });
+                }
+                renderPagination();
+
+                lucide.createIcons();
+            }
+
+            function shouldHideTableColumn(header) {
+                return currentTab === 'users' && String(header || '').trim().toLowerCase() === 'password';
+            }
+
+            function renderPagination() {
+                const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+                const pagEl = document.getElementById('pagination');
+                if (filteredData.length <= rowsPerPage) { pagEl.innerHTML = ''; return; }
+                pagEl.innerHTML = `
+                    <button class="pagination-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevron-left" style="width:16px;"></i> Prev</button>
+                    <div class="page-info">Page ${currentPage} / ${totalPages}</div>
+                    <button class="pagination-btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Next <i data-lucide="chevron-right" style="width:16px;"></i></button>`;
+                lucide.createIcons();
+            }
+
+            function changePage(delta) { currentPage += delta; renderTable(); }
+
+            function filterTable() {
+                const v = document.getElementById('searchInput').value.toLowerCase();
+                filteredData = allData.filter(r => r.some(c => String(c).toLowerCase().includes(v)));
+                currentPage = 1;
+                renderTable();
+                if (currentTab === 'data') updateSummary();
+            }
+
+            function parseCurrency(val) {
+                if (!val) return 0;
+                let s = String(val).replace(/[^\d.,\-+]/g, '').trim();
+                if (!s) return 0;
+
+                const hasComma = s.includes(',');
+                const hasDot = s.includes('.');
+
+                if (hasComma && hasDot) {
+                    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+                        s = s.replace(/\./g, '').replace(',', '.');
+                    } else {
+                        s = s.replace(/,/g, '');
+                    }
+                } else if (hasComma) {
+                    const parts = s.split(',');
+                    if (parts.length === 2 && parts[1].length <= 2) {
+                        s = parts[0] + '.' + parts[1];
+                    } else {
+                        s = s.replace(/,/g, '');
+                    }
+                } else if (hasDot) {
+                    const parts = s.split('.');
+                    if (parts.length > 2 || (parts.length === 2 && parts[1].length > 2)) {
+                        s = s.replace(/\./g, '');
+                    }
+                }
+
+                return parseFloat(s) || 0;
+            }
+
+            /** Summary: $34,650.00 (US — comma thousands, dot decimals) */
+            function formatSummaryCurrency(val) {
+                const n = Number(val) || 0;
+                const negative = n < 0;
+                const abs = Math.abs(n);
+                const parts = abs.toFixed(2).split('.');
+                const intFmt = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return `${negative ? '-' : ''}$${intFmt}.${parts[1]}`;
+            }
+
+            function updateSummary() {
+                const totalItemsList = [
+                    "Plans, Demo, Survey", "Permits", "Trash / Site Maintenance", "Trash / Site Maintenace",
+                    "Piling/Foundation / Masonry", "Piling/Foundation / Masonary",
+                    "Frame Material & Labor", "Roof & Floor Trusses", "Interior Stairs", "Windows / Sliding Glass Doors",
+                    "Electrical", "Lighting Fixtures / Ceiling Fans", "Plumbing", "Plumbing Fixtures, & Tubs",
+                    "HVAC", "Stucco / Siding / Stone veneer", "Stucco Exterior & Interior Garage",
+                    "Insulation", "Soffit and Ceilings", "Roof", "Drywall",
+                    "Interior Doors & Front Door", "Garage Doors", "Interior / Exterior Paint", "Decks & Railings",
+                    "Elevator", "Door Hardware & Closet Shelving", "Trimwork", "Cabinets", "Counter Tops",
+                    "Appliances & Fireplace", "Gas Service and Water Heaters", "Tile & Stone", "Shower Doors and Mirrors",
+                    "Wood Floor", "Garage Floor", "Landscape and Sod", "Wall and Gates", "Wall & Gates", "Patio / Driveway",
+                    "Final Clean", "Punchout", "Pool", "Dock", "Misc."
+                ];
+
+                const totalFallbackItems = [
+                    "Trey", "Lot Purchase Cost", "Taxes", "Utilities /Insurance", "Utilities /Insurance to 8/29/26",
+                    "Utlilties /Insurance"
+                ];
+
+                const normalizeItemName = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                const buildCostItemsSet = new Set(totalItemsList.map(normalizeItemName));
+                const totalFallbackItemsSet = new Set(totalFallbackItems.map(normalizeItemName));
+                const treyRowIndex = allData.findIndex(row => normalizeItemName(row[0]) === 'trey');
+                const treySheetRow = treyRowIndex !== -1 ? allData[treyRowIndex]._sheetRow : -1;
+
+                const cols = {
+                    "trey": { label: "Treys Payments", total: 0, buildCost: 0, elTot: 'tot-trey', elTbc: 'tbc-trey' },
+                    "bill": { label: "Bills Payments", total: 0, buildCost: 0, elTot: 'tot-bill', elTbc: 'tbc-bill' },
+                    "cost": { label: "Total Costs", total: 0, buildCost: 0, elTot: 'tot-cost', elTbc: 'tbc-cost' },
+                    "est": { label: "Estimated", total: 0, buildCost: 0, elTot: 'tot-est', elTbc: 'tbc-est' },
+                    "payments": { label: "Payments", total: 0, buildCost: 0, elTot: 'tot-payments', elTbc: 'tbc-payments' }
+                };
+
+                Object.keys(cols).forEach(k => {
+                    const idx = allHeaders.indexOf(cols[k].label);
+                    cols[k].idx = idx;
+                });
+
+                allData.forEach((row, rowIndex) => {
+                    const isTotalRow = rowIndex < 43;
+                    
+                    Object.keys(cols).forEach(k => {
+                        if (cols[k].idx === -1) return;
+                        const val = parseCurrency(row[cols[k].idx]);
+                        if (isTotalRow) {
+                            cols[k].total += val;
+                        }
+                        cols[k].buildCost += val;
+                    });
+                });
+
+                Object.keys(cols).forEach(k => {
+                    document.getElementById(cols[k].elTot).innerText = formatSummaryCurrency(cols[k].total);
+                    document.getElementById(cols[k].elTbc).innerText = formatSummaryCurrency(cols[k].buildCost);
+                });
+            }
+
+            function bindModalTotalCostsRecalc(row) {
+                const { trey, bill, cost } = getTotalCostsColumnIndices();
+                if (cost === -1 || trey === -1 || bill === -1) return;
+                const costInput = document.querySelector(`.row-input[data-idx="${cost}"]`);
+                const update = () => {
+                    const draft = buildFullRowFromData(row);
+                    draft[trey] = document.querySelector(`.row-input[data-idx="${trey}"]`)?.value ?? '';
+                    draft[bill] = document.querySelector(`.row-input[data-idx="${bill}"]`)?.value ?? '';
+                    if (costInput) costInput.value = calculateTotalCostsValue(draft);
+                };
+                document.querySelector(`.row-input[data-idx="${trey}"]`)?.addEventListener('input', update);
+                document.querySelector(`.row-input[data-idx="${bill}"]`)?.addEventListener('input', update);
+            }
+
+            function openEditModal(sheetRow) {
+                if (currentTab === 'users' && !isAdminUser()) {
+                    alert("You do not have permission to edit users.");
+                    return;
+                }
+                editingRowIndex = sheetRow;
+                const row = allData.find(r => r._sheetRow === sheetRow);
+                recalculateRowTotalCosts(row);
+                bindModalTotalCostsRecalc(row);
+                document.getElementById('editModalTitle').innerText = 'EDIT DATA';
+                document.getElementById('viewHistoryBtn').style.display = isAdminUser() ? 'inline-block' : 'none';
+                document.getElementById('saveEditBtn').innerText = 'Save changes';
+                document.getElementById('saveEditBtn').onclick = () => saveEdit();
+                document.getElementById('editForm').innerHTML = allHeaders.map((h, i) => {
+                    const readonly = h === 'Total Costs' ? ' readonly title="Treys Payments + Bills Payments"' : '';
+                    const value = formatMoneyInputValue(h, row[i] ?? '');
+                    return `
+                    <div class="edit-form-group"><label>${h}</label><input type="text" class="form-input row-input" data-idx="${i}" value="${escapeAttr(value)}"${readonly}></div>`;
+                }).join('');
+                bindModalTotalCostsRecalc(row);
+                document.getElementById('editModal').style.display = 'flex';
+                lucide.createIcons();
+            }
+
+            function openAddUserModal() {
+                if (currentTab !== 'users' || !isAdminUser()) return;
+                editingRowIndex = -1;
+                document.getElementById('editModalTitle').innerText = 'ADD USER';
+                document.getElementById('viewHistoryBtn').style.display = 'none';
+                document.getElementById('rowHistory').style.display = 'none';
+                document.getElementById('saveEditBtn').innerText = 'Add user';
+                document.getElementById('saveEditBtn').onclick = () => saveNewUser();
+                document.getElementById('editForm').innerHTML = allHeaders.map((h, i) => {
+                    const defaultValue = String(h || '').trim().toLowerCase() === 'password' ? '1' : '';
+                    return `
+                    <div class="edit-form-group"><label>${h}</label><input type="text" class="form-input row-input" data-idx="${i}" value="${defaultValue}"></div>`;
+                }).join('');
+                document.getElementById('editModal').style.display = 'flex';
+                lucide.createIcons();
+            }
+
+            function closeEditModal() {
+                document.getElementById('editModal').style.display = 'none';
+                document.getElementById('rowHistory').style.display = 'none';
+                editingRowIndex = -1;
+            }
+
+            async function saveEdit(actionType = 'UPDATE') {
+                if (currentTab === 'users' && !isAdminUser()) {
+                    alert("You do not have permission to edit users.");
+                    return;
+                }
+                if (actionType === 'RESTORE' && !isAdminUser()) {
+                    alert("Only admin can restore old versions.");
+                    return;
+                }
+                const inputs = document.querySelectorAll('.row-input');
+                const row = allData.find(r => r._sheetRow === editingRowIndex);
+                const oldRow = buildFullRowFromData(row || []);
+                inputs.forEach(inp => {
+                    const idx = parseInt(inp.dataset.idx);
+                    if (row) row[idx] = formatMoneyInputValue(allHeaders[idx], inp.value);
+                });
+                if (row) recalculateRowTotalCosts(row);
+                const newRow = buildFullRowFromData(row || []);
+                try {
+                    await saveRowData(editingRowIndex, newRow, oldRow, { actionType });
+                    closeEditModal();
+                    await fetchData();
+                } catch (e) { alert("Error saving changes."); }
+            }
+
+            async function saveNewUser() {
+                if (!isAdminUser()) {
+                    alert("You do not have permission to add users.");
+                    return;
+                }
+                const inputs = document.querySelectorAll('.row-input');
+                const newRow = []; inputs.forEach(inp => newRow[parseInt(inp.dataset.idx)] = inp.value);
+                document.getElementById('loading').style.display = 'flex';
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/users!A:D:append?valueInputOption=USER_ENTERED`, {
+                        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: [newRow] })
+                    });
+                    if (!res.ok) throw new Error();
+
+                    const user = JSON.parse(localStorage.getItem('userData') || '{}');
+                    const historyEntry = [new Date().toLocaleString('en-US'), user.id || 'N/A', 'ADD', 'users', '', JSON.stringify([]), JSON.stringify(newRow)];
+                    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/history!A:A:append?valueInputOption=USER_ENTERED`, {
+                        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: [historyEntry] })
+                    });
+                    alert("Success!"); closeEditModal(); await fetchData();
+                } catch (e) { alert("Error adding user."); } finally { document.getElementById('loading').style.display = 'none'; }
+            }
+
+            async function toggleHistory() {
+                if (!isAdminUser()) {
+                    alert("Only admin can view history.");
+                    return;
+                }
+                const el = document.getElementById('rowHistory');
+                if (el.style.display === 'block') { el.style.display = 'none'; return; }
+                el.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>'; el.style.display = 'block';
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/history!A2:G`, { headers: { Authorization: `Bearer ${token}` } });
+                    const data = await res.json();
+                    const logs = (data.values || []).filter(h => h[3] === currentTab && parseInt(h[4]) === editingRowIndex).reverse();
+                    if (!logs.length) { el.innerHTML = '<p style="text-align:center;padding:20px;">No history found.</p>'; return; }
+
+                    let tableHtml = `
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    ${allHeaders.map(h => `<th>${h}</th>`).join('')}
+                                    <th>Restore</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    tableHtml += logs.map(h => {
+                        const oldRow = JSON.parse(h[5] || '[]');
+                        const newRow = JSON.parse(h[6] || '[]');
+
+                        const dataCells = allHeaders.map((header, i) => {
+                            const isChanged = oldRow[i] !== newRow[i];
+                            const value = formatCellDisplay(header, newRow[i] ?? '');
+                            return `<td class="${isChanged ? 'diff-changed' : ''}" title="${escapeAttr(newRow[i] ?? '')}">${value}</td>`;
+                        }).join('');
+
+                        return `
+                            <tr>
+                                <td>${h[0]}</td>
+                                <td>${h[1]}</td>
+                                <td>${h[2]}</td>
+                                ${dataCells}
+                                <td><button class="btn-restore" onclick='restoreState(${h[6]})'>Restore</button></td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    tableHtml += `</tbody></table>`;
+                    el.innerHTML = tableHtml;
+                } catch (e) { console.error(e); el.innerHTML = 'Error loading history.'; }
+            }
+
+            let allHistoryLogs = [];
+
+            function closeAllHistoryModal() {
+                document.getElementById('allHistoryModal').style.display = 'none';
+            }
+
+            function formatHistoryValues(rawJson) {
+                try {
+                    const values = JSON.parse(rawJson || '[]');
+                    if (!Array.isArray(values)) return escapeHtml(rawJson || '');
+                    return values
+                        .map((value, idx) => {
+                            const text = getCellRawString(value).trim();
+                            if (!text) return '';
+                            const header = allHeaders[idx] || `Col ${idx + 1}`;
+                            return `${escapeHtml(header)}: ${escapeHtml(text)}`;
+                        })
+                        .filter(Boolean)
+                        .join('<br>');
+                } catch (e) {
+                    return escapeHtml(rawJson || '');
+                }
+            }
+
+            async function openAllHistoryModal() {
+                if (!isAdminUser()) {
+                    alert("Only admin can view history.");
+                    return;
+                }
+                const modal = document.getElementById('allHistoryModal');
+                const el = document.getElementById('allHistoryContent');
+                modal.style.display = 'flex';
+                el.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>';
+
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/history!A2:G`, { headers: { Authorization: `Bearer ${token}` } });
+                    const data = await res.json();
+                    const logs = (data.values || []).reverse();
+                    allHistoryLogs = logs;
+
+                    if (!logs.length) {
+                        el.innerHTML = '<p style="text-align:center;padding:20px;">No history found.</p>';
+                        return;
+                    }
+
+                    const rows = logs.map((h, idx) => {
+                        let newRow = [];
+                        try {
+                            newRow = JSON.parse(h[6] || '[]');
+                        } catch (e) {
+                            newRow = [];
+                        }
+
+                        const dataCells = allHeaders.map((header, i) => {
+                            const value = formatCellDisplay(header, newRow[i] ?? '');
+                            return `<td title="${escapeAttr(newRow[i] ?? '')}">${value}</td>`;
+                        }).join('');
+
+                        return `
+                            <tr>
+                                <td>${escapeHtml(h[0] || '')}</td>
+                                <td>${escapeHtml(h[1] || '')}</td>
+                                <td>${escapeHtml(h[2] || '')}</td>
+                                <td>${escapeHtml(h[4] || '')}</td>
+                                ${dataCells}
+                                <td><button class="btn-restore" onclick="restoreAllHistoryEntry(${idx})">Restore</button></td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    el.innerHTML = `
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Row</th>
+                                    ${allHeaders.map(h => `<th>${escapeHtml(h || '')}</th>`).join('')}
+                                    <th>Restore</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    `;
+                } catch (e) {
+                    console.error(e);
+                    el.innerHTML = 'Error loading history.';
+                }
+            }
+
+            async function getSheetRowValues(tabName, sheetRow) {
+                const token = await getAccessToken();
+                const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/${tabName}!A${sheetRow}:ZZ${sheetRow}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('row fetch failed');
+                const data = await res.json();
+                return data.values?.[0] || [];
+            }
+
+            async function restoreAllHistoryEntry(index) {
+                if (!isAdminUser()) {
+                    alert("Only admin can restore old versions.");
+                    return;
+                }
+
+                const h = allHistoryLogs[index];
+                const tabName = h?.[3];
+                const sheetRow = parseInt(h?.[4], 10);
+                if (!CONFIG.tabs[tabName] || !sheetRow) {
+                    alert("This history entry cannot be restored.");
+                    return;
+                }
+
+                let restoreRow;
+                try {
+                    restoreRow = JSON.parse(h[6] || '[]');
+                } catch (e) {
+                    alert("This history entry has invalid data.");
+                    return;
+                }
+
+                if (!Array.isArray(restoreRow) || !confirm(`Restore ${tabName} row ${sheetRow} to this history state?`)) return;
+
+                try {
+                    const oldRow = await getSheetRowValues(tabName, sheetRow);
+                    await saveRowData(sheetRow, restoreRow, oldRow, { actionType: 'RESTORE', tab: tabName });
+                    closeAllHistoryModal();
+                    if (currentTab === tabName) await fetchData();
+                } catch (e) {
+                    console.error(e);
+                    alert("Error restoring history.");
+                }
+            }
+
+            async function restoreState(data) {
+                if (!isAdminUser()) {
+                    alert("Only admin can restore old versions.");
+                    return;
+                }
+                if (!confirm("Restore to this state?")) return;
+                document.querySelectorAll('.row-input').forEach(inp => inp.value = data[parseInt(inp.dataset.idx)] ?? '');
+                await saveEdit('RESTORE');
+            }
+
+            async function init() {
+                lucide.createIcons();
+                initInlineCellEdit();
+                if (localStorage.getItem('isLoggedIn')) {
+                    const u = JSON.parse(localStorage.getItem('userData') || '{}');
+                    document.getElementById('userNameDisplay').innerText = u.name || '';
+                    document.getElementById('userRoleDisplay').innerText = u.role || '';
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+                    applyUserPermissions();
+                    await fetchData();
+                }
+            }
+
+            async function handleLogin() {
+                const user = document.getElementById('username').value.trim();
+                const pass = document.getElementById('password').value.trim();
+                if (!user || !pass) return;
+                document.getElementById('loading').style.display = 'flex';
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/users!A2:D`, { headers: { Authorization: `Bearer ${token}` } });
+                    const users = (await res.json()).values || [];
+                    const found = users.find(u => u[0] === user && u[3] === pass);
+                    if (found) {
+                        localStorage.setItem('isLoggedIn', 'true');
+                        localStorage.setItem('userData', JSON.stringify({ name: found[1], id: found[0], role: found[2] }));
+                        location.reload();
+                    } else { document.getElementById('loginError').innerText = "Invalid username or password."; document.getElementById('loginError').style.display = 'block'; }
+                } catch (e) { alert("Login error."); } finally { document.getElementById('loading').style.display = 'none'; }
+            }
+
+            function handleLogout() { localStorage.clear(); location.reload(); }
+            init();
+        </script>
+    </div>
+</body>
+
+</html>
