@@ -697,6 +697,24 @@
             color: #fff;
         }
 
+        .btn-clear-history {
+            background: #fef2f2;
+            border: 1.5px solid #fecaca;
+            color: #b91c1c;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-clear-history:hover {
+            background: #b91c1c;
+            color: #fff;
+            border-color: #b91c1c;
+        }
+
         .btn-save {
             background: var(--primary);
             color: #fff;
@@ -829,10 +847,13 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 style="font-weight: 800; color: var(--primary); font-size: 1.25rem;">ALL HISTORY</h3>
-                    <button onclick="closeAllHistoryModal()"
-                        style="border:none; background:none; cursor:pointer; color:#94a3b8;">
-                        <i data-lucide="x" style="width: 28px;"></i>
-                    </button>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <button type="button" class="btn-clear-history" onclick="clearAllHistory()">CLEAR HISTORY</button>
+                        <button type="button" onclick="closeAllHistoryModal()"
+                            style="border:none; background:none; cursor:pointer; color:#94a3b8;">
+                            <i data-lucide="x" style="width: 28px;"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="history-section" id="allHistoryContent" style="display:block; max-height:75vh;">
                     <!-- All history injected here -->
@@ -856,11 +877,7 @@
                         <i data-lucide="users" style="width:16px;"></i> Users
                     </button>
                 </div>
-                <div class="search-container">
-                    <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" id="searchInput" class="search-input" placeholder="SEARCH..."
-                        oninput="filterTable()">
-                </div>
+          
                 <button id="addUserBtn" class="module-btn" onclick="openAddUserModal()" style="display:none;">
                     <i data-lucide="plus" style="width:16px;"></i> Add
                 </button>
@@ -1458,13 +1475,7 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
             function changePage(delta) { currentPage += delta; renderTable(); }
 
-            function filterTable() {
-                const v = document.getElementById('searchInput').value.toLowerCase();
-                filteredData = allData.filter(r => r.some(c => String(c).toLowerCase().includes(v)));
-                currentPage = 1;
-                renderTable();
-                if (currentTab === 'data') updateSummary();
-            }
+          
 
             function parseCurrency(val) {
                 if (!val) return 0;
@@ -1736,6 +1747,33 @@ sR2Sh8e3h3Knd6j1tceRIFU=
 
             function closeAllHistoryModal() {
                 document.getElementById('allHistoryModal').style.display = 'none';
+            }
+
+            async function clearAllHistory() {
+                if (!isAdminUser()) {
+                    alert("Only admin can clear history.");
+                    return;
+                }
+                if (!confirm("Clear all history? This cannot be undone.")) return;
+
+                const el = document.getElementById('allHistoryContent');
+                el.innerHTML = '<p style="text-align:center;padding:20px;">Clearing...</p>';
+
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.spreadsheetId}/values/history!A2:G:clear`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    if (!res.ok) throw new Error('clear history failed');
+                    allHistoryLogs = [];
+                    el.innerHTML = '<p style="text-align:center;padding:20px;">No history found.</p>';
+                } catch (e) {
+                    console.error(e);
+                    alert('Failed to clear history.');
+                    await openAllHistoryModal();
+                }
             }
 
             function formatHistoryValues(rawJson) {
