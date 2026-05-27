@@ -154,8 +154,8 @@
         /* Data module — Excel-like grid */
         @media print {
             @page {
-                size: A4 portrait;
-                margin: 8mm;
+                size: A4 landscape;
+                margin: 5mm;
             }
 
             html,
@@ -163,6 +163,7 @@
                 background: #fff !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                width: 100% !important;
             }
 
             #loginOverlay,
@@ -191,13 +192,17 @@
 
             #summaryContainer .summary-table {
                 width: 100% !important;
-                font-size: 8pt !important;
+                font-size: 7pt !important;
                 border-collapse: collapse !important;
+                table-layout: auto !important;
             }
 
             #summaryContainer .summary-table th,
             #summaryContainer .summary-table td {
-                padding: 2px 6px !important;
+                padding: 2px 5px !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
             }
 
             #summaryContainer,
@@ -218,20 +223,41 @@
 
             #dataTable {
                 width: 100% !important;
-                table-layout: fixed !important;
+                max-width: 100% !important;
+                table-layout: auto !important;
             }
 
             #dataTable.excel-grid {
-                font-size: 8pt !important;
-                line-height: 1.1 !important;
+                font-size: 7pt !important;
+                line-height: 1.15 !important;
             }
 
             #dataTable.excel-grid th,
             #dataTable.excel-grid td {
-                padding: 1px 3px !important;
+                padding: 1px 4px !important;
                 height: auto !important;
-                overflow: hidden !important;
+                overflow: visible !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                vertical-align: top !important;
+            }
+
+            #dataTable.excel-grid th.money-column,
+            #dataTable.excel-grid td.money-column {
                 white-space: nowrap !important;
+                word-break: normal !important;
+                text-align: right !important;
+            }
+
+            #dataTable.excel-grid thead th.cell-label-header,
+            #dataTable.excel-grid tbody td.cell-label {
+                min-width: 11em !important;
+                max-width: 14em !important;
+            }
+
+            #dataTable.excel-grid tbody td.cell-payment-note {
+                min-width: 9em !important;
+                max-width: 12em !important;
             }
 
             #dataTable .excel-stt-col,
