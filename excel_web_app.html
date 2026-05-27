@@ -1161,7 +1161,8 @@ sR2Sh8e3h3Knd6j1tceRIFU=
                     return;
                 }
                 currentTab = tabName;
-                document.getElementById('searchInput').value = '';
+                const searchEl = document.getElementById('searchInput');
+                if (searchEl) searchEl.value = '';
                 await fetchData();
             }
 
